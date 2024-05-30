@@ -3068,7 +3068,7 @@ function replaceInUri(link, replacements, isRecovery) {
     case link.startsWith("hysteria://"):
       return replaceHysteria(link, replacements);
     case link.startsWith("hysteria2://"):
-      return replaceHysteria2(link, replacements);  // 新增支持
+      return replaceHysteria2(link, replacements, isRecovery);  // 新增支持
     default:
       return;
   }
@@ -3223,36 +3223,23 @@ function replaceHysteria(link, replacements) {
   replacements[randomDomain] = server;
   return link.replace(server, randomDomain);
 }
-function replaceHysteria2(link, replacements) {
-    const regexMatch = link.match(/hysteria2:\/\/(.*?)@(.*?)(?::(\d+))?(\/\?[^#]*)(#.*)?/);
+function replaceHysteria2(link, replacements, isRecovery) {
+    const randomUUID = generateRandomUUID();
+    const randomDomain = generateRandomStr(10) + ".com";
+    const regexMatch = link.match(/(hysteria2):\/\/(.*)@(.*?):/);
     if (!regexMatch) {
-        return; // 如果不符合格式，不进行任何操作
+        return;
     }
-
-    let [auth, hostname, port, queryString, fragment] = regexMatch.slice(1);
-
-    // 如果端口号不存在，则默认为443
-    port = port || '443';
-
-    // 替换认证信息
-    const randomAuth = generateRandomStr(12);
-    replacements[auth] = randomAuth;
-    auth = randomAuth;
-
-    // 强制生成随机字符串用于替换服务器地址
-    const randomHostname = generateRandomStr(12) + ".com";
-    replacements[hostname] = randomHostname;
-    hostname = randomHostname;
-
-    // 替换服务器端口
-    const randomPort = Math.floor(Math.random() * 65535);
-    replacements[port] = randomPort.toString();
-    port = randomPort;
-
-    // 重构链接
-    return `hysteria2://${auth}@${hostname}:${port}${queryString}${fragment || ''}`;
+    const [, , uuid, server] = regexMatch;
+    replacements[randomDomain] = server;
+    replacements[randomUUID] = uuid;
+    const regex = new RegExp(`${uuid}|${server}`, "g");
+    if (isRecovery) {
+        return link.replace(regex, (match) => cReplace(match, uuid, replacements[uuid], server, replacements[server]));
+    } else {
+        return link.replace(regex, (match) => cReplace(match, uuid, randomUUID, server, randomDomain));
+    }
 }
-
 function replaceYAML(yamlObj, replacements) {
   if (!yamlObj.proxies) {
     return;
