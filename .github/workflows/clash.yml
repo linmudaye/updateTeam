@@ -3,7 +3,7 @@ name: Compress Kernel and Upload
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build:
